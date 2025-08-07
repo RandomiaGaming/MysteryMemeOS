@@ -2,6 +2,8 @@
 set -euo pipefail
 cd "$(dirname "$(realpath "$0")")"
 
+# Clones and builds libdrm.
+# Doesn't care if libdrm was already built it always resets everything and starts fresh.
 rm -rf ./libdrm
 rm -rf ./libdrm_build
 git clone https://gitlab.freedesktop.org/mesa/libdrm.git ./libdrm

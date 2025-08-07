@@ -2,6 +2,8 @@
 set -euo pipefail
 cd "$(dirname "$(realpath "$0")")"
 
+# Clones and builds libalsa.
+# Doesn't care if libalsa was already built it always resets everything and starts fresh.
 rm -rf ./libalsa
 rm -rf ./libalsa_build
 git clone https://github.com/alsa-project/alsa-lib.git ./libalsa
