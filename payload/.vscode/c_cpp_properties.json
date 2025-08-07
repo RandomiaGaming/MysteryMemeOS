@@ -1,0 +1,18 @@
+{
+    "configurations": [
+        {
+            "name": "Musl CPP Properties",
+            "includePath": [
+                "${workspaceFolder}/src/**/*",
+                "${workspaceFolder}/obj/libdrm_build/include",
+                "${workspaceFolder}/obj/libdrm_build/include/libdrm",
+                "${workspaceFolder}/obj/libalsa_build/include"
+            ],
+            "compilerPath": "${workspaceFolder}/obj/musl/bin/gcc",
+            "cStandard": "c23",
+            "cppStandard": "c++23",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}

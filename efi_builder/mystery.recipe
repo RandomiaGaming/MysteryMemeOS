@@ -1,0 +1,24 @@
+conf:outdir:initramfs
+conf:outfile:initramfs.testing
+conf:compress:yes
+
+dir:/dev
+dir:/sys
+dir:/proc
+dir:/run
+dir:/usr
+dir:/bin
+dir:/lib
+
+link:/sbin:/bin
+link:/usr/bin:/bin
+link:/usr/sbin:/bin
+link:/lib64:/lib
+link:/usr/lib:/lib
+link:/usr/lib64:/lib
+
+bin:/bin/busybox:/bin/busybox
+bin:../payload/mystery:/bin/mystery
+file:init:/init
+
+/lib64/ld-linux-x86-64.so.2 /usr/lib/libdrm.so.2 /usr/lib/libasound.so.2 /usr/lib/libm.so.6 /usr/lib/libc.so.6

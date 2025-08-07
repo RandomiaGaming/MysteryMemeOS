@@ -1,0 +1,5 @@
+initramfs/
+*.img
+*.img.gz
+*.efi
+OVMF_VARS.4m.fd

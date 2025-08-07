@@ -1,0 +1,22 @@
+{
+  "version": "2.0.0",
+  "configurations": [
+    {
+      "name": "MysteryPayload (Build and Debug)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/mystery",
+      "MIMode": "gdb",
+      "miDebuggerArgs": "--nx",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "cwd": "${workspaceFolder}/bin",
+      "preLaunchTask": "build_task"
+    }
+  ]
+}

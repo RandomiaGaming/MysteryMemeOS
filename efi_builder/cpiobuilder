@@ -1,0 +1,204 @@
+#!/bin/bash
+# APPROVED: 04/24/2025
+
+# Ensure script fails on any error
+set -xeuo pipefail
+# Setup helper functions
+error() {
+    printf "\e[91mERROR: $1\e[0m\n"
+    exit 1
+}
+grep_no_error() {
+    set +e
+    grep "$@"
+    set -e
+}
+# Setup command functions
+dir_command() {
+    arg1="$(echo "$1" | cut -d":" -f1 | awk '{$1=$1}1')"
+    argmax="$(echo "$1" | cut -d":" -f2-)"
+    if [[ "$arg1" == "" ]]; then
+        error "dir: No value was given for required argument dirName."
+    elif [[ ! "$argmax" == "" ]]; then
+        error "dir: Too many arguments provided."
+    fi
+    if [[ ! "$arg1" == "/"* ]]; then
+        arg1="/$arg1"
+    fi
+    arg1="./initramfs$arg1"
+    echo "Making directory $arg1"
+    mkdir "$arg1"
+}
+link_command() {
+    echo noimpla
+}
+file_command() {
+    arg1="$(echo "$1" | cut -d":" -f1 | awk '{$1=$1}1')"
+    arg2="$(echo "$1" | cut -d":" -f2 | awk '{$1=$1}1')"
+    argmax="$(echo "$1" | cut -d":" -f3-)"
+    if [[ "$arg1" == "" ]]; then
+        error "file: No value was given for required argument sourcePath."
+    if [[ "$arg2" == "" ]]; then
+        error "file: No value was given for required argument destinationPath."
+    elif [[ ! "$argmax" == "" ]]; then
+        error "file: Too many arguments provided."
+    fi
+    if [[ ! "$arg1" == "/"* ]]; then
+        arg1="/$arg1"
+    fi
+    if [[ ! -f "$arg1" ]]; then
+        error "file: Source file \"$arg1\" does not exist."
+    fi
+    if [[ ! "$arg2" == "/"* ]]; then
+        arg2="/$arg2"
+    fi
+    arg2="./initramfs$arg2"
+    if [[ -f "$arg2" ]]; then
+        error "file: Destination file \"$arg2\" already exists."
+    fi
+    if [[ ! -d "$(dirname "$arg2")" ]]; then
+        error "file: Destination file resides in a non-existend folder."
+    fi
+    echo "Copying $arg1 to $arg2"
+    cp "$arg1" "$arg2"
+}
+# Insure script is running as root
+if [[ ! "$(id -u)" == "0" ]] || [[ ! "$(id -g)" == "0" ]]; then
+    error "cpiobuilder must be run as root. Try sudo cpiobuilder."
+fi
+# Get recipe path from args or use default
+recipePath=""
+if [[ "$#" -eq "1" ]]; then
+    recipePath="$(realpath "$1")"
+elif [[ "$#" -gt "1" ]]; then
+    error "Too many arguments provided."
+else
+    recipePaths=( ./*.recipe )
+    recipePathCount=${#recipePaths[@]}
+    if [[ "$recipePathCount" -eq "1" ]]; then
+        recipePath="${recipePaths[0]}"
+    elif [[ "$recipePathCount" -gt "1" ]]; then
+        error "Ambiguous as to which recipe file in working directory was intended. Try cpiobuilder example.recipe."
+    else
+        error "Unable to locate recipe file. Try cpiobuilder example.recipe."
+    fi
+fi
+# Make sure recipe exists
+if [[ ! -f "$recipePath" ]]; then
+    error "Recipe file $recipePath does not exist."
+fi
+# Switch to recipe folder
+cd "$(realpath "$(dirname "$recipePath")")"
+# Print title message
+echo ""
+echo "CpioBuilder v1.0.0"
+echo ""
+# Generate basic initramfs folder
+if [[ -d "initramfs" ]]; then
+    rm -rf "initramfs"
+fi
+mkdir "initramfs"
+# Finally go through each command and run it
+cat "$recipePath" | while read -r line; do
+    command="$(echo "$line" | cut -d":" -f1 | awk '{$1=$1}1')"
+    args="$(echo "$line" | cut -d":" -f2-)"
+    if [[ "$command" == "" ]] || [[ "$command" == "#"* ]]; then
+        continue
+    elif [[ "$command" == "dir" ]]; then
+        dir_command "$args"
+    elif [[ "$command" == "link" ]]; then
+        link_command "$args"
+    elif [[ "$command" == "file" ]]; then
+        file_command "$args"
+    else
+        error "Unknown command \"$command\"."
+    fi
+done
+exit 0
+
+
+
+# Follow each instruction in the initramfsbuilder.recipe
+cat initramfsbuilder.recipe | while read -r command; do
+    sourcePath=$(echo "$command" | awk -F" > " '{print $1}')
+    sourcePath="$(realpath "$sourcePath")"
+    fileInfo="$(file "$sourcePath")"
+    set +u
+    destinationPath=$(echo "$command" | awk -F" > " '{print $2}')
+    set -u
+    if [[ "$destinationPath" == "" ]]; then
+        if [[ "$fileInfo" == *" ELF "*"executable"* ]]; then
+            destinationPath="usr/bin/$(basename "$sourcePath")"
+        elif [[ "$fileInfo" == *" ELF "*"shared object"* ]]; then
+            destinationPath="usr/lib/$(basename "$sourcePath")"
+        else
+            destinationPath="$(basename "$sourcePath")"
+        fi
+    fi
+    if [[ ! "$destinationPath" == "/"* ]]; then
+        destinationPath="/$destinationPath"
+    fi
+    destinationPath="initramfs$destinationPath"
+    # If destination file already exists then bail
+    if [[ -f "$destinationPath" ]]; then
+        continue
+    fi
+    # Copy file
+    echo "Copying $sourcePath to $destinationPath"
+    mkdir -p "$(dirname "$destinationPath")"
+    cp -n "$sourcePath" "$destinationPath"
+    # If the file is a binary include it's dependencies
+    if [[ "$fileInfo" == *" ELF "* ]]; then
+        lddtree --list "$sourcePath" | tail -n +2 | while read -r dependencySource; do
+            dependencyDestination=initramfs/usr/lib/$(basename "$dependencySource")
+            if [[ ! -f "$dependencyDestination" ]]; then
+                cp -n "$dependencySource" "$dependencyDestination"
+            fi
+        done
+    fi
+done
+
+
+
+#!/bin/bash
+# Set script to exit on any errors or if an undefined variable is used
+set -euo pipefail
+# Check if the --fast argument was supplied
+set +u
+compress="false"
+if [[ "$1" == "--compress"  ]]; then
+    compress="true"
+fi
+set -u
+# Make a new initramfs.img from the initramfs dir
+echo "Making initramfs.img from initramfs..."
+#cpio --create --block-size=1 --owner=root:root --ignore-devno --ignore-dirnlink --renumber-inodes --no-absolute-filenames --reset-access-time --file="initramfs.img" >/dev/null 2>&1
+cd initramfs
+chown -R root:root *
+find . -print0 | cpio --null -ov --format=newc --file="../obj/initramfs.img" >/dev/null 2>&1
+cd ../
+# Compress initramfs.img
+if [[ $compress == "true" ]]; then
+    echo "Compressing initramfs.img with gzip..."
+    gzip -c obj/initramfs.img > obj/initramfs.img.gz
+fi
+# Build mystery.efi
+kernelPath=$(find /usr/lib/modules -mindepth 2 -maxdepth 2 -type f -name vmlinuz)
+kernelVersion=$(file $kernelPath | grep -oP "(?<=version )\S+")
+echo "[UKI]" > obj/ukify.conf
+echo "Linux=$kernelPath" >> obj/ukify.conf
+if [[ $compress == "true" ]]; then
+    echo "Initrd=$(realpath obj/initramfs.img.gz)" >> obj/ukify.conf
+else
+    echo "Initrd=$(realpath obj/initramfs.img)" >> obj/ukify.conf
+fi
+echo "Cmdline=init=/init" >> obj/ukify.conf
+echo "Building mystery.efi from kernel version $kernelVersion..."
+ukify -c obj/ukify.conf build -o obj/mystery.efi >/dev/null 2>&1
+# Cleanup and output
+echo "Final File Sizes..."
+if [[ $compress == "true" ]]; then
+    du -h obj/initramfs.img obj/initramfs.img.gz obj/mystery.efi
+else
+    du -h obj/initramfs.img obj/mystery.efi
+fi

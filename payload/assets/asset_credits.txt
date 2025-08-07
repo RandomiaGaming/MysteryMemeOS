@@ -1,0 +1,24 @@
+Huge shout out to the wonderful people who created the assets and media from which this silly little program get's its personality.
+Note that MysteryMemeware and it's creator Jacobi Christ are not associated with any of the people refrenced in this document.
+I just used their songs and artwork in my app and wanted to give credit to the artists.
+
+MysterySong:
+The real name of MysterySong is Happy Happy Christmas by Thomas Mogensen.
+He released this track back in 1998 under the username Drax.
+It was created using FastTracker 2 and the original xm file can be found on modarchive.org:
+https://modarchive.org/index.php?request=view_by_moduleid&query=37049
+Thomas Mogensen also has a soundcloud profile although he never uploaded Happy Happy Christmas on there:
+https://soundcloud.com/drax_maniacs-of-noise
+
+MysteryImage:
+The MysteryImage was originally a pixel art meme uploaded to the form somethingawful.com.
+I couldn't find the original person who made the graphic since the post is long gone but if you know the artist please reach out.
+In 2011 PIFTS.exe uploaded a video to their YouTube channel which seems to be the first time that someone combined Happy Happy Christmas with the "It is a mystery" meme:
+https://www.youtube.com/watch?v=fq3abPnEEGE
+https://www.youtube.com/@PIFTSdotexe
+The HD remake of the "It is a mystery" meme was done by cheesycoke. The HD remake video is now unlisted but can still be seen here:
+https://www.youtube.com/watch?v=Z5xdQIXzIIg
+https://www.youtube.com/@cheesycoke
+The font used in both MysteryImage and the original by cheesycoke is called Poor Richard.
+It was created by Microsoft and several other companies. Info about it can be found here:
+https://learn.microsoft.com/en-us/typography/font-list/poor-richard
