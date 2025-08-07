@@ -1,6 +1,6 @@
+#include "../assets/h/mysterysong.h"
 #include "mysteryaudio.h"
 #include "mystery.h"
-#include "assets/mysterysong.h"
 #include <alsa/asoundlib.h>
 
 // Structs

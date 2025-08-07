@@ -1,12 +1,8 @@
-// Approved 05/01/2025
-// No extra includes
-// TODO nothing
-
-#ifndef MYSTERY_AUDIO_H
-#define MYSTERY_AUDIO_H
+#ifndef mystery_audio_h
+#define mystery_audio_h
 
 void audio_init();
 void audio_update();
 void audio_cleanup();
 
-#endif // MYSTERY_AUDIO_H
+#endif

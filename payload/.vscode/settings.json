@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "mysteryaudio.h": "c",
+        "signal.h": "c",
+        "stdbool.h": "c"
+    }
+}

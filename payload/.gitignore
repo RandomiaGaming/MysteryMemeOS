@@ -1,4 +1,5 @@
 bin/
+obj/
 build/musl/
 build/libdrm/
 build/libdrm_build/
@@ -7,4 +8,3 @@ build/libalsa_build/
 build/libvpx/
 assets/c/
 assets/h/
-assets/o/

@@ -12,8 +12,8 @@ precompile() {
     buffer="$(xxd -p -u -c1 "$assetPath" | awk 'NF { printf "0x%s, ", $0 }')"
     buffer="${buffer::-2}"
 
-    echo "#ifndef $(echo "$assetName")_H" >$outputHPath
-    echo "#define $(echo "$assetName")_H" >>$outputHPath
+    echo "#ifndef $(echo "$assetName")_h" >$outputHPath
+    echo "#define $(echo "$assetName")_h" >>$outputHPath
     echo "#include <stddef.h>" >>$outputHPath
     echo "extern const size_t $(echo "$assetName")_length;" >>$outputHPath
     echo "extern const unsigned char $(echo "$assetName")_buffer[];" >>$outputHPath

@@ -1,16 +1,16 @@
 #include "mystery.h"
 #include "mysteryvideo.h"
-//#include "mysteryaudio.h"
+#include "mysteryaudio.h"
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
 
-void ignore_sig(int sig)
+static void ignore_sig(int sig)
 {
     (void)sig;
     return;
 }
-void exit_sig(int sig)
+static void exit_sig(int sig)
 {
     (void)sig;
     exit_requested = true;
@@ -35,14 +35,14 @@ int main(int argc, char **argv)
         }
     }
 
-    //audio_init();
+    audio_init();
     video_init();
     while (!exit_requested)
     {
-        //audio_update();
+        audio_update();
         video_update();
     }
-    //audio_cleanup();
+    audio_cleanup();
     video_cleanup();
 
     return 0;
