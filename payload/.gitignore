@@ -4,7 +4,7 @@ build/libdrm_build/
 build/libalsa/
 build/libalsa_build/
 build/libvpx/
-build/asset_sources/
-build/asset_headers/
+build/asset_h/
+build/asset_c/
 build/obj/
 build/bin/
