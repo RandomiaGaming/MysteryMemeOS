@@ -1,10 +1,2 @@
-build/musl/
-build/libdrm/
-build/libdrm_build/
-build/libalsa/
-build/libalsa_build/
-build/libvpx/
-build/assets_h/
-build/assets_c/
-build/obj/
-build/bin/
+build/*
+!build/*.*
