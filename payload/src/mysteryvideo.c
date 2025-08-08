@@ -3,7 +3,7 @@
 // TODO support hot plugging devices eventually.
 
 #include "mysteryvideo.h"
-#include "../assets/h/mysteryimage.h"
+#include "../build/assets_h/mysteryimage_bmp.h"
 #include "mystery.h"
 #include <fcntl.h>
 #include <stdio.h>

@@ -4,7 +4,7 @@
     {
       "label": "build_task",
       "type": "shell",
-      "command": "${workspaceFolder}/build/build.sh"
+      "command": "${workspaceFolder}/build/build.sh debug"
     }
   ]
 }

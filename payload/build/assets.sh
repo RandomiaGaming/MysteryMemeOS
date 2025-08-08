@@ -2,25 +2,24 @@
 set -euo pipefail
 cd "$(dirname "$(realpath "$0")")"
 
-# compile_asset a given assetPath into an asset c file, asset h file, and asset o file.
-compile_asset() {
+# Given an assetPath creates an asset c and asset h file.
+precompile_asset() {
     assetPath="$1"
     assetName="$(basename "$assetPath")"
     assetName="${assetName//./_}"
     assetCPath="./assets_c/$assetName.c"
     assetHPath="./assets_h/$assetName.h"
-    assetOPath="./obj/$assetName.o"
 
-    if [[ -f "$assetOPath" ]]; then
+    if [[ -f "$assetCPath" ]]; then
         assetTime="$(stat -c %Y "$assetPath")"
-        assetOTime="$(stat -c %Y "$assetOPath")"
-        if [[ "$assetOTime" -ge "$assetTime" ]]; then
+        assetCTime="$(stat -c %Y "$assetCPath")"
+        if [[ "$assetCTime" -ge "$assetTime" ]]; then
             echo "Skipping \"$assetPath\" because it has not been modified."
             return
         fi
     fi
 
-    echo "Compiling asset \"$assetPath\"."
+    echo "Precompiling asset \"$assetPath\"."
 
     length="$(stat --format=%s "$assetPath")"
     buffer="$(xxd -p -u -c1 "$assetPath" | awk 'NF { printf "0x%s, ", $0 }')"
@@ -28,7 +27,6 @@ compile_asset() {
 
     mkdir -p ./assets_c
     mkdir -p ./assets_h
-    mkdir -p ./obj
 
     echo "#ifndef $(echo "$assetName")_h" >$assetHPath
     echo "#define $(echo "$assetName")_h" >>$assetHPath
@@ -40,9 +38,7 @@ compile_asset() {
     echo "#include <stddef.h>" >$assetCPath
     echo "const size_t $(echo "$assetName")_length = $(echo "$length");" >>$assetCPath
     echo "const unsigned char $(echo "$assetName")_buffer[] = { $(echo "$buffer") };" >>$assetCPath
-
-    ./musl/bin/gcc -c -Wall -Wextra -Werror -std=c2x "$assetCPath" -o "$assetOPath"
 }
 
-compile_asset ../assets/mysteryimage.bmp
-compile_asset ../assets/mysterysong.wav
+precompile_asset ../assets/mysteryimage.bmp
+precompile_asset ../assets/mysterysong.wav

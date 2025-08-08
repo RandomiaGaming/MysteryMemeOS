@@ -1,4 +1,4 @@
-#include "../assets/h/mysterysong.h"
+#include "../build/assets_h/mysterysong_wav.h"
 #include "mysteryaudio.h"
 #include "mystery.h"
 #include <alsa/asoundlib.h>

@@ -1,9 +1,10 @@
 #include "mystery.h"
-#include "mysteryvideo.h"
-#include "mysteryaudio.h"
+//#include "mysteryvideo.h"
+//#include "mysteryaudio.h"
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdio.h>
 
 static void ignore_sig(int sig)
 {
@@ -35,15 +36,18 @@ int main(int argc, char **argv)
         }
     }
 
-    audio_init();
-    video_init();
+    //audio_init();
+    //video_init();
     while (!exit_requested)
     {
-        audio_update();
-        video_update();
+        printf("Heartbeat...\n");
+        fflush(stdout);
+        sleep(1);
+        //audio_update();
+        //video_update();
     }
-    audio_cleanup();
-    video_cleanup();
+    //audio_cleanup();
+    //video_cleanup();
 
     return 0;
 }
