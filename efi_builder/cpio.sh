@@ -28,5 +28,3 @@ cp "$(which busybox)" ./usr/bin/busybox
 chmod 700 ./usr/bin/busybox
 cp ../../../payload/build/bin/mystery ./usr/bin/mystery
 chmod 700 ./usr/bin/mystery
-cp ../../resources/init.sh ./init
-chmod 700 ./init

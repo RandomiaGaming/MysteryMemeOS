@@ -1,5 +1,5 @@
 #include "mystery.h"
-//#include "mysteryvideo.h"
+#include "mysteryvideo.h"
 //#include "mysteryaudio.h"
 #include <signal.h>
 #include <stdlib.h>
@@ -15,15 +15,14 @@ static void exit_sig(int sig)
 {
     (void)sig;
     exit_requested = true;
-    exit(7);
 }
 
-bool exit_requested = false;
+volatile bool exit_requested = false;
 int main(int argc, char **argv)
 {
     (void)argc;
     (void)argv;
-    
+
     for (int i = 0; i < _NSIG; i++)
     {
         if (i == SIGINT)
@@ -36,18 +35,19 @@ int main(int argc, char **argv)
         }
     }
 
+    video_init();
     //audio_init();
-    //video_init();
     while (!exit_requested)
     {
-        printf("Heartbeat...\n");
-        fflush(stdout);
-        sleep(1);
+        video_update();
         //audio_update();
-        //video_update();
     }
+    
+    printf("Mystery info - Quitting gracefully\n");
+    fflush(stdout);
+
+    video_cleanup();
     //audio_cleanup();
-    //video_cleanup();
 
     return 0;
 }

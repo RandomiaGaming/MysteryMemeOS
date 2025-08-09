@@ -40,5 +40,5 @@ precompile_asset() {
     echo "const unsigned char $(echo "$assetName")_buffer[] = { $(echo "$buffer") };" >>$assetCPath
 }
 
-precompile_asset ../assets/mysteryimage.bmp
+precompile_asset ../assets/mysteryimage.raw
 precompile_asset ../assets/mysterysong.wav

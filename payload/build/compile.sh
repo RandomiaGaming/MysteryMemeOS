@@ -25,6 +25,7 @@ compile() {
     ./musl/bin/gcc -c -DLINUX -g -O0 -no-pie -fno-pic -fno-plt -Wall -Wextra -Werror -std=c2x -I"./libdrm_build/include" -I"./libdrm_build/include/libdrm" -I"./libalsa_build/include" "$sourcePath" -o "$sourceOPath"
 }
 
-compile ./assets_c/mysteryimage_bmp.c
+compile ./assets_c/mysteryimage_raw.c
 compile ./assets_c/mysterysong_wav.c
 compile ../src/mystery.c
+compile ../src/mysteryvideo.c

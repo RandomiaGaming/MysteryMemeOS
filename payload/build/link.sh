@@ -12,10 +12,12 @@ binaryPath="./bin/mystery"
 mkdir -p ./bin
 if "$debug" == "true"; then
     echo "Linking binary \"$binaryPath\" in Debug mode."
-    ./musl/bin/gcc -static -static-libstdc++ -static-libgcc -g -no-pie -fno-pic -fno-plt ./obj/* -o "$binaryPath"
+    ./musl/bin/gcc -static -static-libstdc++ -static-libgcc -g -no-pie -fno-pic -fno-plt \
+    ./obj/* ./libdrm_build/lib/libdrm.a ./libalsa_build/lib/libasound.a -o "$binaryPath"
 else
     echo "Linking binary \"$binaryPath\" in Release mode."
-    ./musl/bin/gcc -static -static-libstdc++ -static-libgcc -s -no-pie -fno-pic -fno-plt ./obj/* -o "$binaryPath"
+    ./musl/bin/gcc -static -static-libstdc++ -static-libgcc -s -no-pie -fno-pic -fno-plt \
+    ./obj/* ./libdrm_build/lib/libdrm.a ./libalsa_build/lib/libasound.a -o "$binaryPath"
     objcopy \
       --only-section=.init \
       --only-section=.text \

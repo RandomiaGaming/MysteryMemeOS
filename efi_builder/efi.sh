@@ -2,6 +2,9 @@
 set -euo pipefail
 cd "$(dirname "$(realpath "$0")")"
 
+cp ./resources/init.sh ./obj/cpio/init
+chmod 700 ./obj/cpio/init
+
 mkdir -p ./obj
 
 cd ./obj/cpio
