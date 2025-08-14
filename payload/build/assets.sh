@@ -41,4 +41,4 @@ precompile_asset() {
 }
 
 precompile_asset ../assets/mysteryimage.raw
-precompile_asset ../assets/mysterysong.wav
+precompile_asset ../assets/mysterysong.raw

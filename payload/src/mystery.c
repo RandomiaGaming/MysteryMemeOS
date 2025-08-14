@@ -1,6 +1,6 @@
 #include "mystery.h"
 #include "mysteryvideo.h"
-//#include "mysteryaudio.h"
+#include "mysteryaudio.h"
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -36,18 +36,18 @@ int main(int argc, char **argv)
     }
 
     video_init();
-    //audio_init();
+    audio_init();
     while (!exit_requested)
     {
         video_update();
-        //audio_update();
+        audio_update();
     }
     
     printf("Mystery info - Quitting gracefully\n");
     fflush(stdout);
 
     video_cleanup();
-    //audio_cleanup();
+    audio_cleanup();
 
     return 0;
 }

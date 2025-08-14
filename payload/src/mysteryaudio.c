@@ -1,194 +1,200 @@
-#include "../build/assets_h/mysterysong_wav.h"
 #include "mysteryaudio.h"
-#include "mystery.h"
+#include "../build/assets_h/mysterysong_raw.h"
+#include <alloca.h> // Required by asoundlib.h on musl
 #include <alsa/asoundlib.h>
+#include <stdbool.h>
 
-
+static uint32_t get_sample_rate()
+{
+    return *(uint32_t *)(mysterysong_raw_buffer + 0);
+}
+static uint32_t get_channel_count()
+{
+    return *(uint32_t *)(mysterysong_raw_buffer + 4);
+}
+static uint32_t get_sample_count()
+{
+    return *(uint32_t *)(mysterysong_raw_buffer + 12);
+}
+static uint32_t *get_sample_ptr(uint32_t index)
+{
+    return (uint32_t *)(mysterysong_raw_buffer + 12 + (index * 4));
+}
 
 // Structs
 struct device_context
 {
-    int cardId;
-    int deviceId;
+    int card_id;
+    int device_id;
     snd_pcm_t *handle;
-    uint32_t buffer[4096];
     uint32_t position;
 };
 
 // Basic control flow
-struct device_context **devices = NULL;
+static int device_count = 0;
+static struct device_context *devices[256];
 void audio_init()
 {
-    // Count the max number of devices
-    int deviceCountMax = 0;
-    int cardId = -1;
-    while (snd_card_next(&cardId) == 0 && cardId >= 0)
+    int error_code = 0;
+    int card_id = -1;
+    while (true)
     {
-        char *cardName = sformat("hw:%d", cardId);
         snd_ctl_t *ctl = NULL;
-        if (snd_ctl_open(&ctl, cardName, 0) != 0)
+        char card_name[256];
+
+        if ((error_code = snd_card_next(&card_id)) != 0)
         {
-            free(cardName);
-            continue;
+            printf("Audio error - snd_card_next failed - %s\n", snd_strerror(error_code));
+            fflush(stdout);
+            goto cleanup_card;
         }
-        free(cardName);
-
-        int deviceId = -1;
-        while (snd_ctl_pcm_next_device(ctl, &deviceId) == 0 && deviceId >= 0)
+        if (card_id < 0)
         {
-            deviceCountMax++;
+            break;
         }
-    }
 
-    // Alloc space for the max number of devices
-    int deviceCount = 0;
-    devices = (struct device_context **)malloc(sizeof(void *) * (deviceCountMax + 1));
+        sprintf(card_name, "hw:%d", card_id);
 
-    cardId = -1;
-    while (snd_card_next(&cardId) == 0 && cardId >= 0)
-    {
-        char *cardName = sformat("hw:%d", cardId);
-        printf("Found card %s.\n", cardName);
+        printf("Found card %s.\n", card_name);
         fflush(stdout);
-        snd_ctl_t *ctl = NULL;
-        if (snd_ctl_open(&ctl, cardName, 0) != 0)
+
+        if ((error_code = snd_ctl_open(&ctl, card_name, 0)) != 0)
         {
-            printf("AUDIO - ERROR: snd_ctl_open failed.\n");
+            printf("Audio error - snd_ctl_open failed - %s\n", snd_strerror(error_code));
             fflush(stdout);
-            free(cardName);
-            continue;
+            goto cleanup_card;
         }
-        free(cardName);
 
-        int deviceId = -1;
-        while (snd_ctl_pcm_next_device(ctl, &deviceId) == 0 && deviceId >= 0)
+        int device_id = -1;
+        while (true)
         {
-            struct device_context *device = (struct device_context *)malloc(sizeof(struct device_context));
-            memset((void *)device, 0, sizeof(struct device_context));
+            struct device_context *device = NULL;
 
-            device->cardId = cardId;
-            device->deviceId = deviceId;
-
-            char *deviceName = sformat("plughw:%d,%d", device->cardId, device->deviceId);
-            printf("Found device %s.\n", deviceName);
-            fflush(stdout);
-            if (snd_pcm_open(&device->handle, deviceName, SND_PCM_STREAM_PLAYBACK, 0) != 0)
+            if ((error_code = snd_ctl_pcm_next_device(ctl, &device_id)) != 0)
             {
-                printf("AUDIO - ERROR: snd_pcm_open failed.\n");
+                printf("Audio error - snd_ctl_pcm_next_device failed - %s\n", snd_strerror(error_code));
                 fflush(stdout);
-                free(deviceName);
-                free(device);
-                continue;
+                goto cleanup_device;
             }
-            free(deviceName);
+            if (device_id < 0)
+            {
+                break;
+            }
 
-            // Set device params (no need for free this is on stack)
+            device = (struct device_context *)calloc(1, sizeof(struct device_context));
+            device->card_id = card_id;
+            device->device_id = device_id;
+
+            char device_name[256];
+            sprintf(device_name, "hw:%d,%d", device->card_id, device->device_id);
+
+            printf("Found device %s.\n", device_name);
+            fflush(stdout);
+
+            if ((error_code = snd_pcm_open(&device->handle, device_name, SND_PCM_STREAM_PLAYBACK, 0)) != 0)
+            {
+                printf("Audio error - snd_pcm_open failed - %s\n", snd_strerror(error_code));
+                fflush(stdout);
+                goto cleanup_device;
+            }
+
             snd_pcm_hw_params_t *params;
             snd_pcm_hw_params_alloca(&params);
             snd_pcm_hw_params_any(device->handle, params);
 
-            for (int fmt = 0; fmt <= SND_PCM_FORMAT_LAST; ++fmt)
+            if ((error_code = snd_pcm_hw_params_set_access(device->handle, params, SND_PCM_ACCESS_RW_INTERLEAVED)) != 0)
             {
-                if (snd_pcm_hw_params_test_format(device->handle, params, (snd_pcm_format_t)fmt) == 0)
-                {
-                    printf("Format supported: %s\n", snd_pcm_format_name((snd_pcm_format_t)fmt));
-                    fflush(stdout);
-                }
-            }
-            unsigned int rates[] = {8000, 16000, 22050, 32000, 44100, 48000, 96000, 192000};
-            for (int i = 0; i < sizeof(rates) / sizeof(rates[0]); ++i)
-            {
-                if (snd_pcm_hw_params_test_rate(device->handle, params, rates[i], 0) == 0)
-                {
-                    printf("Rate supported: %u Hz\n", rates[i]);
-                    fflush(stdout);
-                }
-            }
-            for (unsigned int ch = 1; ch <= 8; ++ch)
-            {
-                if (snd_pcm_hw_params_test_channels(device->handle, params, ch) == 0)
-                {
-                    printf("Channels supported: %u\n", ch);
-                    fflush(stdout);
-                }
+                printf("Audio error - snd_pcm_hw_params_set_access failed for SND_PCM_ACCESS_RW_INTERLEAVED - %s\n", snd_strerror(error_code));
+                fflush(stdout);
+                goto cleanup_device;
             }
 
-            snd_pcm_hw_params_set_access(device->handle, params, SND_PCM_ACCESS_RW_INTERLEAVED);
-            snd_pcm_hw_params_set_format(device->handle, params, SND_PCM_FORMAT_S32_LE);
-            snd_pcm_hw_params_set_channels(device->handle, params, mysterysong_channels);
+            if ((error_code = snd_pcm_hw_params_set_format(device->handle, params, SND_PCM_FORMAT_S16_LE)) != 0)
+            {
+                printf("Audio error - snd_pcm_hw_params_set_format failed for SND_PCM_FORMAT_S32_LE - %s\n", snd_strerror(error_code));
+                fflush(stdout);
+                goto cleanup_device;
+            }
+
+            if ((error_code = snd_pcm_hw_params_set_channels(device->handle, params, get_channel_count())) != 0)
+            {
+                printf("Audio error - snd_pcm_hw_params_set_channels failed - %s\n", snd_strerror(error_code));
+                fflush(stdout);
+                goto cleanup_device;
+            }
+
             int dir = 0;
-            unsigned int samplerate = mysterysong_samplerate;
-            snd_pcm_hw_params_set_rate_near(device->handle, params, &samplerate, &dir);
-            if (snd_pcm_hw_params(device->handle, params) != 0)
+            unsigned int samplerate = get_sample_rate();
+            if ((error_code = snd_pcm_hw_params_set_rate_near(device->handle, params, &samplerate, &dir)) != 0 || samplerate != get_sample_rate())
             {
-                printf("AUDIO - ERROR: snd_pcm_hw_params failed.\n");
+                printf("Audio error - snd_pcm_hw_params_set_rate_near failed - %s\n", snd_strerror(error_code));
                 fflush(stdout);
-                snd_pcm_close(device->handle);
-                free(device);
-                continue;
+                goto cleanup_device;
             }
 
-            // Prepare PCM device
-            if (snd_pcm_prepare(device->handle) != 0)
+            if ((error_code = snd_pcm_hw_params(device->handle, params)) != 0)
             {
-                printf("AUDIO - ERROR: snd_pcm_prepare failed.\n");
+                printf("Audio error - snd_pcm_hw_params failed - %s\n", snd_strerror(error_code));
                 fflush(stdout);
-                snd_pcm_close(device->handle);
-                free(device);
-                continue;
+                goto cleanup_device;
             }
 
-            // Add new device to list
-            devices[deviceCount] = device;
-            deviceCount++;
+            if ((error_code = snd_pcm_prepare(device->handle)) != 0)
+            {
+                printf("Audio error - snd_pcm_prepare failed - %s\n", snd_strerror(error_code));
+                fflush(stdout);
+                goto cleanup_device;
+            }
+
+            devices[device_count] = device;
+            device_count++;
+            device = NULL;
+
+        cleanup_device:
+        if(device != NULL) {
+            if (device->handle != NULL) {
+                snd_pcm_close(device->handle);
+            }
+            free(device);
+        }
         }
 
-        snd_ctl_close(ctl);
+    cleanup_card:
+        if (ctl != NULL)
+        {
+            snd_ctl_close(ctl);
+        }
     }
-
-    devices[deviceCount] = NULL;
 }
 void audio_update()
 {
-    for (int i = 0; devices[i] != NULL; i++)
+    for (int i = 0; i < device_count; i++)
     {
         struct device_context *device = devices[i];
 
-        // Populate buffer with up to date data
-        for (int i = 0; i < 4096; i++)
+        uint32_t frames_to_write = get_sample_count() - device->position;
+        if (frames_to_write > 4096)
         {
-            device->buffer[i] = mysterysong_buffer[(device->position + i) % mysterysong_length];
+            frames_to_write = 4096;
         }
 
-        // Write data from buffer to device
-        int framesWritten = snd_pcm_writei(device->handle, device->buffer, 4096);
-        if (framesWritten < 0)
+        int frames_written = snd_pcm_writei(device->handle, get_sample_ptr(device->position), frames_to_write);
+        if (frames_written < 0)
         {
-            printf("AUDIO - ERROR: snd_pcm_writei failed trying to recover...\n");
+            printf("Audio error - snd_pcm_writei failed - %s - Falling back to snd_pcm_recover\n", strerror(errno));
             fflush(stdout);
-            if (snd_pcm_recover(device->handle, framesWritten, 0) != 0)
+            if (snd_pcm_recover(device->handle, frames_written, 0) != 0)
             {
-                printf("AUDIO - ERROR: snd_pcm_recover failed.\n");
+                printf("Audio error - snd_pcm_recover failed - %s\n", strerror(errno));
                 fflush(stdout);
             }
         }
         else
         {
-            device->position = (device->position + framesWritten) % mysterysong_length;
+            device->position = (device->position + frames_written) % get_sample_count();
         }
     }
 }
 void audio_cleanup()
 {
-    for (int i = 0; devices[i] != NULL; i++)
-    {
-        struct device_context *device = devices[i];
-
-        snd_pcm_close(device->handle);
-
-        free(device);
-        device = NULL;
-    }
-    free(devices);
-    devices = NULL;
 }

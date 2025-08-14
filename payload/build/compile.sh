@@ -26,6 +26,7 @@ compile() {
 }
 
 compile ./assets_c/mysteryimage_raw.c
-compile ./assets_c/mysterysong_wav.c
+compile ./assets_c/mysterysong_raw.c
 compile ../src/mystery.c
 compile ../src/mysteryvideo.c
+compile ../src/mysteryaudio.c

@@ -18,3 +18,10 @@ for y in range(height):
         file.write(b.to_bytes(1))
         file.write(a.to_bytes(1))
 file.close()
+
+"""
+mysteryimage.raw format
+uint32_t width
+uint32_t height
+struct { uint8_t r; uint8_t g; uint8_t b; uint8_a; } pixels[]
+"""

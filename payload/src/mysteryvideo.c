@@ -2,7 +2,6 @@
 #include "../build/assets_h/mysteryimage_raw.h"
 #include "mystery.h"
 #include <fcntl.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -12,8 +11,9 @@
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 #include <errno.h>
+#include <stdio.h>
 
-// Working with cards
+// Structs
 struct binding
 {
     uint32_t connector_id;
@@ -33,8 +33,46 @@ struct card
     int binding_count;
     struct binding *bindings;
 };
+struct renderer
+{
+    struct card *card;
+    uint32_t connector_id;
+    uint32_t crtc_id;
+
+    drmModeModeInfo mode;
+    uint32_t width;
+    uint32_t height;
+
+    bool showing_b;
+
+    uint32_t framebuffer_a_handle;
+    uint64_t framebuffer_a_size;
+    uint32_t *framebuffer_a;
+    uint32_t framebuffer_a_id;
+
+    uint32_t framebuffer_b_handle;
+    uint64_t framebuffer_b_size;
+    uint32_t *framebuffer_b;
+    uint32_t framebuffer_b_id;
+};
+
+// Global vars
 static int card_count = 0;
 static struct card *cards[32] = {};
+static int renderer_count = 0;
+static struct renderer *renderers[256] = {};
+
+// Static function signatures
+static void init_cards();
+static void cleanup_renderer(struct renderer *renderer);
+static void remove_renderer(int index);
+static void update_renderers();
+static uint32_t get_width();
+static uint32_t get_height();
+static uint32_t get_pixel(uint32_t x, uint32_t y);
+static void render(struct renderer *renderer);
+
+// Working with cards
 static void init_cards()
 {
     glob_t cards_glob = {};
@@ -192,30 +230,6 @@ cleanupGlob:
 }
 
 // Working with renderers
-struct renderer
-{
-    struct card *card;
-    uint32_t connector_id;
-    uint32_t crtc_id;
-
-    drmModeModeInfo mode;
-    uint32_t width;
-    uint32_t height;
-
-    bool showing_b;
-
-    uint32_t framebuffer_a_handle;
-    uint64_t framebuffer_a_size;
-    uint32_t *framebuffer_a;
-    uint32_t framebuffer_a_id;
-
-    uint32_t framebuffer_b_handle;
-    uint64_t framebuffer_b_size;
-    uint32_t *framebuffer_b;
-    uint32_t framebuffer_b_id;
-};
-static int renderer_count = 0;
-static struct renderer *renderers[256] = {};
 static void cleanup_renderer(struct renderer *renderer)
 {
     if (renderer->framebuffer_b_id != 0)
@@ -257,6 +271,7 @@ static void remove_renderer(int index)
     }
     renderer_count--;
 }
+// TODO better hotplug support and handing different monitors on the same connector.
 static void update_renderers()
 {
     for (int i = 0; i < card_count; i++)
@@ -270,7 +285,6 @@ static void update_renderers()
             {
                 if (strcmp(renderers[k]->card->path, cards[i]->path) == 0 && renderers[k]->connector_id == cards[i]->bindings[j].connector_id)
                 {
-                    // TODO if renderer exists but disconnected the cleanup.
                     goto cleanup;
                 }
             }
@@ -390,6 +404,8 @@ static void update_renderers()
                 fflush(stdout);
                 goto cleanup;
             }
+
+            render(renderer);
 
             if (drmModeSetCrtc(renderer->card->fd, renderer->crtc_id, renderer->framebuffer_b_id, 0, 0, &renderer->connector_id, 1, &renderer->mode) != 0)
             {
