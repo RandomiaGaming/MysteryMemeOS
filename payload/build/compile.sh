@@ -22,7 +22,7 @@ compile() {
 
     mkdir -p ./obj
 
-    ./musl/bin/gcc -c -DLINUX -g -O0 -no-pie -fno-pic -fno-plt -Wall -Wextra -Werror -std=c2x -I"./libdrm_build/include" -I"./libdrm_build/include/libdrm" -I"./libalsa_build/include" "$sourcePath" -o "$sourceOPath"
+    ./musl/bin/gcc -c -DLINUX -g -O0 -no-pie -fno-pic -fno-plt -Wall -Wextra -Werror -std=c2x -I"./libdrm/build/include" -I"./libdrm/build/include/libdrm" -I"./libalsa/build/include" "$sourcePath" -o "$sourceOPath"
 }
 
 compile ./assets_c/mysteryimage_raw.c
